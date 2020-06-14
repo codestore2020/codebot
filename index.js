@@ -9,71 +9,65 @@ giveaways = require("discord-giveaways");
 const active = new Map();
 
 client.on("message", message => {
+// Genereer random xp.
+var randomxp = Math.floor(Math.random(1) * 15) + 1;
 
-    // Genereer random xp.
-    var randomxp = Math.floor(Math.random(1) * 15) + 1;
+// Verkrijg id van de gebruiker.
+var idUser = message.author.id;
 
-    // Verkrijg id van de gebruiker.
-    var idUser = message.author.id;
+// console.log(randomxp);
 
-    // console.log(randomxp);
+// Als persoon nog niet in file is maak dan standaard aan.
+if (!levelfile[idUser]) {
 
-    // Als persoon nog niet in file is maak dan standaard aan.
-    if (!levelfile[idUser]) {
+    levelfile[idUser] = {
 
-        levelfile[idUser] = {
+        xp: 0,
+        level: 0
 
-            xp: 0,
-            level: 0
+    };
 
-        };
+}
 
-    }
+// Voeg xp toe.
+levelfile[idUser].xp += randomxp;
 
-    // Voeg xp toe.
-    levelfile[idUser].xp += randomxp;
+// Verkrijg level van de gebruiker.
+var levelUser = levelfile[idUser].level;
+// Verkrijg xp van de gebruiker.
+var xpUser = levelfile[idUser].xp;
+// Bereken volgend level op basis van de xp.
+var nextLevelXp = levelUser * 300;
 
-    // Verkrijg level van de gebruiker.
-    var levelUser = levelfile[idUser].level;
-    // Verkrijg xp van de gebruiker.
-    var xpUser = levelfile[idUser].xp;
-    // Bereken volgend level op basis van de xp.
-    var nextLevelXp = levelUser * 300;
+// Als het level 0 is zet dan xp op 100.
+if (nextLevelXp === 0) nextLevelXp = 100;
 
-    // Als het level 0 is zet dan xp op 100.
-    if (nextLevelXp === 0) nextLevelXp = 100;
+console.log(nextLevelXp + " " + xpUser);
 
-    console.log(nextLevelXp + " " + xpUser);
+// Als gebruikeer volgend level heeft bereikt zet level 1 hoger en zet in file.
+// Let op Nodemon restart wegens dat we de file als require hebben binnengehaald.
+if (xpUser >= nextLevelXp) {
 
-    // Als gebruikeer volgend level heeft bereikt zet level 1 hoger en zet in file.
-    // Let op Nodemon restart wegens dat we de file als require hebben binnengehaald.
-    if (xpUser >= nextLevelXp) {
+    levelfile[idUser].level += 1;
 
-        levelfile[idUser].level += 1;
+    // Wegschrijven van data. Je kan dit ook altijd opslaan maar dit zorgt ervoor dat het data
+    // verkeer te groot wordt.
+    fs.writeFile("./data/levels/levels.json", JSON.stringify(levelfile), err => {
 
-        // Wegschrijven van data. Je kan dit ook altijd opslaan maar dit zorgt ervoor dat het data
-        // verkeer te groot wordt.
-        fs.writeFile("./data/levels/levels.json", JSON.stringify(levelfile), err => {
+        if (err) console.log(err);
 
-            if (err) console.log(err);
-
-        );
-    };  
+    });
 
     // Zenden van een embed met gegevens.
     var embedLevel = new discord.MessageEmbed()
-        .setTitle("***Level hoger***")
+        .setDescription("***Level hoger***")
         .setColor("#29e53f")
         .addField("Nieuw level: ", levelfile[idUser].level);
+
     message.channel.send(embedLevel);
 
-    message.author.send("gg je bent level up ")
-
-    var a = new discord.MessageEmbed()
-    .addField("Nieuw level: ", levelfile[idUser].level);
-    message.author.send(a);
-
 }
+
 if (message.author.bot) return;
 if(message.content.indexOf(botConfig.prefix) !== 0) return;
 
@@ -92,48 +86,15 @@ console.error(err);
 }
 });
 
-client.on("guildMemberAdd", member => {
 
-        member.addRole("707991372996804708");
-
-        const channel = member.guild.channels.find("name", "👋🏼-¦-welkom");
-        if (!channel) console.log("Kan het kanaal niet vinden.");
  
-        var joinEmbed = new discord.RichEmbed()
-            .setAuthor(`${member.user.tag}`, member.user.displayAvatarURL)
-            .setDescription(`———————————————————\nWelkom ${member.user.username}\nVeel plezier in de server\n———————————————————\n©️Code Store`)
-            .setColor("#00FF00")
-            .setTimestamp()
-            .setFooter("Gebruiker gejoined.");
- 
-        channel.send(joinEmbed);
-//———————————————————
-//Welkom ${member.user.username}
-//Veel plezier in de server 
-//———————————————————
-//©️Code Store
-    });
-
-client.on("guildMemberRemove", member => {
- 
-    const channel = member.guild.channels.find("name", "👋🏼-¦-welkom");
-    if (!channel) console.log("Kan het kanaal niet vinden.");
-     
-    var LeaveEmbed = new discord.RichEmbed()
-        .setAuthor(`${member.user.tag}`, member.user.displayAvatarURL)
-        .setColor("#FF0000")
-        .setDescription(`———————————————————\nJammer dat ${member.user.username} geleavd is\nHopenlijk zien we je snel weer!\n———————————————————\n©️Code Store`)
-        .setTimestamp()
-        .setFooter("Gebruiker Geleaved.");
-     
-    channel.send(LeaveEmbed);
-     
-});
-    
 
 client.on("ready", () => {
+
 console.log("De bot is opgestart")
-client.user.setActivity("Code Store");
+
+client.user.setActivity("een beeren feest", {type: "STREAMING", url: "https://www.twitch.tv/ninja"});
+
 client.user.setStatus('dnd');
 
 giveaways.launch(client, {
@@ -154,7 +115,25 @@ giveaways.launch(client, {
 const events = {
     MESSAGE_REACTION_ADD: 'messageReactionAdd' 
 };
+client.on("guildMemberAdd", member => {
+    const channel = member.guild.channels.cache.find(ch => ch.name === 'welkom');
+    if (!channel) console.log("[Fout] Welkom kanaal is niet gevonden.");
 
+    var welkomEmbed = new discord.MessageEmbed()
+        .setAuthor(`${member.user.tag}`, member.user.displayAvatarURL)
+        .setDescription(`———————————————————\nWelkom ${member.user.username}\nVeel plezier in de server\n———————————————————\n©ModBotIC`)
+        .setColor("RANDOM")
+        .setTimestamp()
+        .setFooter(`${member.user.tag} is gejoind :)`);
+    channel.send(welkomEmbed);
+
+    member.send("Welkom in de test server hopenlijk vind je het leuk :D");
+//———————————————————
+//Welkom ${member.user.username}
+//Veel plezier in de server 
+//———————————————————
+        
+});
 client.on('raw', async event => {
  
     if (!events.hasOwnProperty(event.t)) return;
@@ -210,4 +189,4 @@ client.on('messageReactionAdd', (reaction, user) => {
     }
 });
 
-client.login(process.env.token);
+client.login(botConfig.token);
